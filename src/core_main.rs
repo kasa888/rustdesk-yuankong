@@ -497,6 +497,31 @@ pub fn core_main() -> Option<Vec<String>> {
                 }
             }
             return None;
+        } else if args[0] == "--add-peer" {
+            if is_cli_setting_change_disabled() {
+                println!("Settings are disabled!");
+                return None;
+            }
+            let max = args.len();
+            let id = args.get(1).cloned().unwrap_or_default();
+            let get_value = |name: &str| {
+                let pos = args.iter().position(|value| value == name)?;
+                args.get(pos + 1).cloned()
+            };
+            let password = get_value("--password").unwrap_or_default();
+            let alias = get_value("--alias").unwrap_or_default();
+            let force_relay = args.iter().any(|value| value == "--relay");
+            if id.is_empty() || max < 2 {
+                println!("Usage: --add-peer ID --password PASSWORD [--alias NAME] [--relay]");
+            } else if crate::platform::is_installed()
+                && (is_root() || cfg!(not(target_os = "windows")))
+            {
+                crate::ui_interface::add_peer(id, password, alias, force_relay);
+                println!("Done!");
+            } else {
+                println!("Installation and administrative privileges required!");
+            }
+            return None;
         } else if args[0] == "--config" {
             if args.len() == 2 && !args[0].contains("host=") {
                 if crate::platform::is_installed() && is_root() {
@@ -880,6 +905,7 @@ fn is_user_main_ipc_scope_cli_command(args: &[String]) -> bool {
             | Some("--set-unlock-pin")
             | Some("--get-id")
             | Some("--set-id")
+            | Some("--add-peer")
             | Some("--config")
             | Some("--option")
             | Some("--assign")
@@ -927,6 +953,7 @@ mod tests {
             "--set-unlock-pin",
             "--get-id",
             "--set-id",
+            "--add-peer",
             "--config",
             "--option",
             "--assign",

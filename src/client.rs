@@ -3568,9 +3568,20 @@ pub async fn handle_hash(
     }
     // peer config password
     if password.is_empty() {
-        password = lc.read().unwrap().config.password.clone();
-        if !password.is_empty() {
-            lc.write().unwrap().password_source = Default::default();
+        let config = lc.read().unwrap().config.clone();
+        if config.ui_flutter.get("password-source").map(String::as_str) == Some("plain") {
+            let plain_password = String::from_utf8_lossy(&config.password).to_string();
+            let mut hasher = Sha256::new();
+            hasher.update(plain_password.as_bytes());
+            hasher.update(&hash.salt);
+            let res = hasher.finalize();
+            password = res[..].into();
+            lc.write().unwrap().password_source = PasswordSource::SharedAb(plain_password);
+        } else {
+            password = config.password;
+            if !password.is_empty() {
+                lc.write().unwrap().password_source = Default::default();
+            }
         }
     }
     // personal ab password

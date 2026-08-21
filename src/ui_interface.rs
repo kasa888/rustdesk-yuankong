@@ -333,6 +333,23 @@ pub fn set_peer_option(id: String, name: String, value: String) {
     c.store(&id);
 }
 
+pub fn add_peer(id: String, password: String, alias: String, force_relay: bool) {
+    let mut c = PeerConfig::load(&id);
+    if !password.is_empty() {
+        c.password = password.as_bytes().to_vec();
+        c.ui_flutter
+            .insert("password-source".to_owned(), "plain".to_owned());
+    }
+    if !alias.is_empty() {
+        c.options.insert("alias".to_owned(), alias);
+    }
+    if force_relay {
+        c.options
+            .insert("force-always-relay".to_owned(), "Y".to_owned());
+    }
+    c.store(&id);
+}
+
 #[inline]
 pub fn get_options() -> String {
     let options = {
